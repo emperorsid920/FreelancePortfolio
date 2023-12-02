@@ -31,6 +31,7 @@ def create_app():
 
     # Register blueprints with the app, specifying URL prefixes
     app.register_blueprint(views, url_prefix='/')
+
     app.register_blueprint(auth, url_prefix='/')
 
     # Create the database using the create_database function
