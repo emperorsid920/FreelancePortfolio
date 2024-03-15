@@ -6,11 +6,9 @@ import matplotlib.pyplot as plt
 # Load and preprocess MNIST dataset
 (train_images, _), (_, _) = tf.keras.datasets.mnist.load_data()
 train_images = (train_images - 127.5) / 127.5  # Normalize to [-1, 1]
+train_images = train_images[:1000]  # Select the first 1000 images
 train_images = train_images.reshape(train_images.shape[0], 28, 28, 1).astype('float32')
 
-print("Load ended")
-
-print("Gen Model")
 # Generator model
 def make_generator_model():
     model = models.Sequential()
@@ -29,9 +27,7 @@ def make_generator_model():
 
     model.add(layers.Conv2DTranspose(1, (5, 5), strides=(2, 2), padding='same', use_bias=False, activation='tanh'))
     return model
-print("Gen Model done")
 
-print("Disc Model")
 # Discriminator model
 def make_discriminator_model():
     model = models.Sequential()
@@ -47,41 +43,34 @@ def make_discriminator_model():
     model.add(layers.Dense(1))
     return model
 
+# Define loss function and optimizers
+cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+generator_optimizer = tf.keras.optimizers.Adam(1e-4)
+discriminator_optimizer = tf.keras.optimizers.Adam(1e-4)
 
-print("Disc Model")
+# Define number of epochs and batch size
+EPOCHS = 100
+BATCH_SIZE = 64
+noise_dim = 100
+num_examples_to_generate = 16
 
+# Define seed for generating random noise
+seed = tf.random.normal([num_examples_to_generate, noise_dim])
+
+# Define generator and discriminator models
 generator = make_generator_model()
 discriminator = make_discriminator_model()
 
-# Define loss function
-cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+# Define generator loss
+def generator_loss(fake_output):
+    return cross_entropy(tf.ones_like(fake_output), fake_output)
 
-print("DiscLoss")
 # Define discriminator loss
 def discriminator_loss(real_output, fake_output):
     real_loss = cross_entropy(tf.ones_like(real_output), real_output)
     fake_loss = cross_entropy(tf.zeros_like(fake_output), fake_output)
     total_loss = real_loss + fake_loss
     return total_loss
-
-print("GenLoss")
-
-# Define generator loss
-def generator_loss(fake_output):
-    return cross_entropy(tf.ones_like(fake_output), fake_output)
-
-# Define optimizers
-generator_optimizer = tf.keras.optimizers.Adam(1e-4)
-discriminator_optimizer = tf.keras.optimizers.Adam(1e-4)
-
-# Define number of epochs and batch size
-EPOCHS = 100
-BATCH_SIZE = 256
-noise_dim = 100
-num_examples_to_generate = 16
-
-# Define seed for generating random noise
-seed = tf.random.normal([num_examples_to_generate, noise_dim])
 
 # Generate and save images
 def generate_and_save_images(model, epoch, test_input):
@@ -118,13 +107,10 @@ def train_step(images):
 
     return gen_loss, disc_loss
 
-
-
 # Train the GAN
 def train(dataset, epochs):
     for epoch in range(epochs):
         for image_batch in dataset:
-
             gen_loss, disc_loss = train_step(image_batch)
 
         if epoch % 10 == 0:
